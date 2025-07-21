@@ -1,176 +1,164 @@
-const express = require('express')
-const knex = require('knex')
-const router = express.Router()
+const express = require('express');
+const router = express.Router();
 
-module.exports = router
-
+// 👇 เส้นทาง root เพื่อแสดงรายการ API ที่มีให้ใช้
 router.get('/', (req, res) => {
   res.send({
     result: 'success',
     message: 'api -> System Data',
     1: 'get - reverseString?text=StringToBeReverse',
-    2: 'post - authenticate {username: eark,userpassword: 123}',
-    3: 'post - authorize {token:FAKE TOKEN,otp:225566}',
+    2: 'post - authenticate {username: eark, userpassword: 123}',
+    3: 'post - authorize {token: FAKE TOKEN, otp: 225566}',
     4: 'post - getUserTable',
-    5: 'post - addUser{username: eark,userpassword: 123,superuserflag: 1,userdesc: Eark dev เทพ, emailaddress: earkha@gmail.com,  workstationlogin: IT,userstatus: ACTIVE}',
+    5: 'post - addUser {username, userpassword, superuserflag, userdesc, emailaddress, workstationlogin, userstatus}',
     6: 'post - getUserInformationByToken *with header token*',
-  })
-})
-router.post('/getUserInformationByToken', async (req, res) => {
-  try {
-    let token = req.headers.token
-    let sql = "select u.user_dept,u.userdesc,current_timestamp curdate, dep.description"
-    +" from user_name u"
-    +" left join department dep on u.user_dept = dep.dept "
-    +" where token ='"+token+"'"
-    let data= await req.db.raw(sql)
-    console.log(sql);
+  });
+});
 
-    res.send({
-      result: 'success',
-      data,
-      sql,
-    })
-}  catch(e) {
-    res.send({
-      result: 'failed',
-      message: e.message,
-    })
-  }
-})
-// test call
+// 👇 Reverse string (ทดสอบง่าย ๆ)
 router.get('/reverseString', async (req, res) => {
   try {
-    let message = req.query?.text || ''
-    if (message) 
+    let message = req.query?.text || '';
+    if (message)
       message = message.split('').reverse().join('');
 
     res.send({
       result: 'success',
       message,
-    })
-}  catch(e) {
+    });
+  } catch (e) {
     res.send({
       result: 'failed',
       message: e.message,
-    })
+    });
   }
-})
+});
 
-router.post('/authenticate',async (req, res) => {
-  let form = req.body;
-  try 
-  {
-    let data = await req.db("user_name").select('userstatus')
-    .where('username',form.username+'')
-    .where('userpassword',form.userpassword+'');
+// 👇 เพิ่มผู้ใช้ใหม่ (MongoDB)
+router.post('/addUser', async (req, res) => {
+  const form = req.body;
+  try {
+    const result = await req.db.collection('user_name').insertOne(form);
+    res.send({
+      result: 'Insert success',
+      insertedId: result.insertedId,
+    });
+  } catch (e) {
+    res.send({
+      result: 'failed',
+      message: e.message,
+    });
+  }
+});
 
-    if(data)
-    {
-      if (data[0].userstatus == 'ACTIVE') {
-        let sql = "update user_name SET TOKEN=uuid() where username='"+form.username+"' AND userpassword='"+form.userpassword+"'"
-        +" AND userid>0"
-
-        await req.db.raw(sql)
-
-        data = await req.db("user_name")
-          //.select('username', 'userdesc', 'superuserflag', 'editlevel', 'emailaddress', 'token')
-          .where('username', form.username)
-          .where('userpassword', form.userpassword);
-      } else {
-        res.send({
-          result: false,
-          userstatus:'INACTIVE'
-        })     
-        return true;  
-      }
-
+// 👇 ดึงข้อมูล user ทั้งหมด
+router.post('/getUserTable', async (req, res) => {
+  try {
+    const users = await req.db.collection('user_name').find({}).toArray();
+    if (users.length) {
       res.send({
-        result: true,
-        data,
-      })
+        result: 'success',
+        data: users,
+      });
     } else {
       res.send({
-        result: false,
-        data,
-      })      
+        result: 'No User table found',
+        data: [],
+      });
     }
+  } catch (e) {
+    res.send({
+      result: 'failed',
+      message: e.message,
+    });
+  }
+});
+
+// 👇 Login ตรวจสอบ user และ password
+router.post('/authenticate', async (req, res) => {
+  const { username, userpassword } = req.body;
+  try {
+    const user = await req.db.collection('user_name').findOne({ username, userpassword });
+    if (!user) {
+      return res.send({ result: false, message: 'Invalid credentials' });
+    }
+
+    if (user.userstatus !== 'ACTIVE') {
+      return res.send({ result: false, userstatus: 'INACTIVE' });
+    }
+
+    const token = generateFakeToken(); // หรือใช้ uuid
+    await req.db.collection('user_name').updateOne({ username }, { $set: { token } });
+
+    const updatedUser = await req.db.collection('user_name').findOne({ username });
+
+    res.send({
+      result: true,
+      data: updatedUser,
+    });
   } catch (e) {
     res.send({
       result: 'fail',
-      Message: e.message,
-    })
+      message: e.message,
+    });
   }
-})
+});
 
-router.post('/authorize',async (req, res) => {
-  let form = req.body;
-  let token = req.headers.token;
-  try 
-  {
-    let data = await req.db('user_name').select('userid')
-    .where('token',token)
-    .where('otp',req.body.otp);
-    let autority;
-    if(data.length){
-      autority = req.db('authorize').select('modulecode','modulename','formname')
-      .where('userid',data[0].userId)
-      res.send({
-        result: true,
-        autority,
-      }) 
-    } else {
-      res.send({
-        status:200,
-        result: true,
-        autority,
-      }) 
+// 👇 Authorization ด้วย token + otp
+router.post('/authorize', async (req, res) => {
+  const { otp } = req.body;
+  const token = req.headers.token;
+  try {
+    const user = await req.db.collection('user_name').findOne({ token, otp });
+    if (!user) {
+      return res.send({ result: false, message: 'Invalid token or OTP' });
     }
-  } catch (e) {
-    res.send({
-      result: 'failed',
-      message: e,
-    })
-  }
-})
-router.post('/addUser',async (req, res) => {
-  let form = req.body;
-  try 
-  {
-    await req.db("user_name").insert({...form});
-    
-    res.send({
-      result: 'Insert success',
-    }) 
-  } catch (e) {
-    res.send({
-      result: 'failed',
-      message: e,
-    })
-  }
-})
 
-router.get('/getUserTable',async (req, res) => {
-  let form = req.body;
-  try 
-  {
-    let sqlData = await req.db('user_name')
-    
-    if (sqlData.length){
-      res.send({
-        result:"success",
-        data: sqlData,
-      })
-    } else {
-      res.send({
-        result:"No User table found",
-        data:[]
-      })
-    }  
+    const authority = await req.db.collection('authorize')
+      .find({ userid: user.userid })
+      .toArray();
+
+    res.send({
+      result: true,
+      authority,
+    });
   } catch (e) {
     res.send({
       result: 'failed',
-      message: e,
-    })
+      message: e.message,
+    });
   }
-})
+});
+
+// 👇 ดึงข้อมูลผู้ใช้ด้วย token (ใช้ header: token)
+router.post('/getUserInformationByToken', async (req, res) => {
+  const token = req.headers.token;
+  try {
+    const user = await req.db.collection('user_name').findOne({ token });
+    if (!user) {
+      return res.send({ result: 'not found', data: null });
+    }
+
+    res.send({
+      result: 'success',
+      data: {
+        userdesc: user.userdesc,
+        user_dept: user.user_dept,
+        email: user.emailaddress,
+        timestamp: new Date(),
+      },
+    });
+  } catch (e) {
+    res.send({
+      result: 'failed',
+      message: e.message,
+    });
+  }
+});
+
+function generateFakeToken() {
+  // คุณสามารถใช้ uuid หรือ crypto.randomUUID() แทน
+  return Math.random().toString(36).substring(2) + Date.now().toString(36);
+}
+
+module.exports = router;
