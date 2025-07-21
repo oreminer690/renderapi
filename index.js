@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require("express");
 const cors = require("cors");
 const { MongoClient } = require("mongodb");
@@ -6,16 +7,12 @@ const app = express();
 const PORT = process.env.PORT || 10000;
 
 // ✅ MongoDB Atlas connection URI
-const uri =
-  "mongodb+srv://oreminer690:EJgSWnYSaNuI3rTE@cluster0.nfjrs3c.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
-
+const uri = process.env.MONGO_URI;
 let db;
 
 // ✅ เชื่อมต่อ MongoDB Atlas
 async function connectMongo() {
   const client = new MongoClient(uri, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
     tls: true,
     tlsAllowInvalidCertificates: true,
   });
