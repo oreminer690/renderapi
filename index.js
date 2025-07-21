@@ -1,4 +1,24 @@
-const express = require('express')
+const express = require('express');
+const cors = require('cors');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+// Test route
+app.get('/', (req, res) => {
+  res.send('Hello from your Render API!');
+});
+
+// Start server
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
+
+/* const express = require('express')
 
 const router = express.Router()
 
@@ -10,7 +30,7 @@ router.get('/', (req, res) => {
     message: 'api'
   })
 })
-/*
+
 router.use('/expOveSell', require('./expOveSell')) // export oversea selling
 router.use('/deliOrd', require('./deliOrd')) // delivery order
 router.use('/invoice', require('./invoice')) // invoice
