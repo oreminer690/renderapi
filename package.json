@@ -19,3 +19,5 @@
     "sqlite3": "^5.1.2"
   }
 }
+
+git remote add origin https://github.com/oreminer690/renderapi.git
