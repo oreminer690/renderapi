@@ -18,7 +18,7 @@ app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
 
-/* const express = require('express')
+ const express = require('express')
 
 const router = express.Router()
 
@@ -29,7 +29,11 @@ router.get('/', (req, res) => {
     result: 'success',
     message: 'api'
   })
-})
+});
+
+app.use('/users', require('./users'));
+
+  /*
 
 router.use('/expOveSell', require('./expOveSell')) // export oversea selling
 router.use('/deliOrd', require('./deliOrd')) // delivery order
