@@ -1,39 +1,69 @@
 const express = require('express');
 const cors = require('cors');
+const knex = require('knex');
+const { MongoClient } = require('mongodb');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// สร้าง connection ของ knex
+/*
+const db = knex({
+  client: "mysql",
+  connection: {
+    host: "localhost",      // หรือเปลี่ยนเป็น IP / hostname ของ MySQL server
+    user: "hugdelph_db",    // ใส่ username ของฐานข้อมูล
+    password: "Iloveyou",   // รหัสผ่านฐานข้อมูล
+    database: "hugdelph_db",// ชื่อฐานข้อมูล
+    port: 3306,
+  },
+});
+*/
+
+const uri = 'mongodb+srv://oreminer690:EJgSWnYSaNuI3rTE@cluster0.nfjrs3c.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
+
+let db;
+
+async function connectMongo() {
+  const client = new MongoClient(uri);
+  try {
+    await client.connect();
+    db = client.db('erp'); // ตั้งชื่อ database ที่คุณจะใช้
+    console.log('✅ Connected to MongoDB Atlas');
+  } catch (e) {
+    console.error('❌ MongoDB Connection Error:', e);
+  }
+}
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
-// Test route
+// ส่ง db ให้กับทุก request ผ่าน req.db
+app.use((req, res, next) => {
+  req.db = db;
+  next();
+});
+
+// ตัวอย่าง route แรก เพื่อทดสอบว่า server ทำงาน
 app.get('/', (req, res) => {
   res.send('Hello from your Render API!');
 });
 
-// Start server
+// นำเข้า router users (สมมติมีไฟล์ users.js ในโฟลเดอร์ routes)
+app.use('/users', require('./users'));
+
+// connect to mongoDB
+connectMongo(); 
+
+// เริ่ม server
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
 
- const express = require('express')
+module.exports = { connectMongo, getDB: () => db };
 
-const router = express.Router()
-
-module.exports = router
-
-router.get('/', (req, res) => {
-  res.send({
-    result: 'success',
-    message: 'api'
-  })
-});
-
-app.use('/users', require('./users'));
-
-  /*
+/*
 
 router.use('/expOveSell', require('./expOveSell')) // export oversea selling
 router.use('/deliOrd', require('./deliOrd')) // delivery order
