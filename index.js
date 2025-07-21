@@ -1,12 +1,13 @@
-const express = require('express');
-const cors = require('cors');
-const { MongoClient } = require('mongodb');
+const express = require("express");
+const cors = require("cors");
+const { MongoClient } = require("mongodb");
 
 const app = express();
 const PORT = process.env.PORT || 10000;
 
 // ✅ MongoDB Atlas connection URI
-const uri = 'mongodb+srv://oreminer690:EJgSWnYSaNuI3rTE@cluster0.nfjrs3c.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
+const uri =
+  "mongodb+srv://oreminer690:EJgSWnYSaNuI3rTE@cluster0.nfjrs3c.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 
 let db;
 
@@ -16,14 +17,15 @@ async function connectMongo() {
     useNewUrlParser: true,
     useUnifiedTopology: true,
     tls: true,
+    tlsAllowInvalidCertificates: true,
   });
 
   try {
     await client.connect();
-    db = client.db('erp'); // ชื่อ database ที่คุณต้องการใช้
-    console.log('✅ Connected to MongoDB Atlas');
+    db = client.db("erp"); // ชื่อ database ที่คุณต้องการใช้
+    console.log("✅ Connected to MongoDB Atlas");
   } catch (e) {
-    console.error('❌ MongoDB Connection Error:', e);
+    console.error("❌ MongoDB Connection Error:", e);
   }
 }
 
@@ -40,12 +42,12 @@ app.use((req, res, next) => {
 });
 
 // ✅ Default route
-app.get('/', (req, res) => {
-  res.send('Hello from your Render API!');
+app.get("/", (req, res) => {
+  res.send("Hello from your Render API!");
 });
 
 // ✅ Import routes
-app.use('/users', require('./users')); // ต้องมีไฟล์ users.js ในโฟลเดอร์เดียวกัน
+app.use("/users", require("./users")); // ต้องมีไฟล์ users.js ในโฟลเดอร์เดียวกัน
 
 // ✅ Start server
 app.listen(PORT, () => {
