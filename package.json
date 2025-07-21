@@ -5,7 +5,8 @@
   "main": "default.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon default"
+    "dev": "nodemon default",
+    "start":"node index.js"
   },
   "author": "",
   "license": "ISC",
