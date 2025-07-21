@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { v4: uuidv4 } = require('uuid');
 
 // 👇 เส้นทาง root เพื่อแสดงรายการ API ที่มีให้ใช้
 router.get('/', (req, res) => {
@@ -86,9 +87,8 @@ router.post('/authenticate', async (req, res) => {
     if (user.userstatus !== 'ACTIVE') {
       return res.send({ result: false, userstatus: 'INACTIVE' });
     }
-
-    const token = generateFakeToken(); // หรือใช้ uuid
-    await req.db.collection('user_name').updateOne({ username }, { $set: { token } });
+    const token = uuidv4();
+    await req.db.collection('user_name').updateOne({_id: user._id}, { $set: { token } });
 
     const updatedUser = await req.db.collection('user_name').findOne({ username });
 
